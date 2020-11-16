@@ -41,6 +41,8 @@ def welcome():
         f"/api/v1.0/precipitation<br/>"
         f"/api/v1.0/stations<br/>"
         f"/api/v1.0/tobs<br/>"
+        f"/api/v1.0/<start_date>/ add start date in YYYY-MM-DD format to replace <start_date>"
+        f"/api/v1.0/<start>/<end>"
     )
 
 
@@ -105,9 +107,60 @@ def tobs():
         temp_dict["date"] = date
         temp_dict["tobs"] = tobs
         all_temps.append(temp_dict)
-
+    
+    #jsonify
+    
     return jsonify(all_temps)
 
+
+@app.route("/api/v1.0/<start>")
+def start(start=None):
+    
+    # Create our session (link) from Python to the DB
+    
+    session = Session(engine)
+    
+    #query start to current tmin, tavg, and tmax
+    
+    from_start = session.query(measurement.date, func.min(measurement.tobs),\
+        func.avg(measurement.tobs),func.max(measurement.tobs)).\
+            filter(measurement.date >= start).\
+                group_by(measurement.date).all()
+    
+    #convert to a list
+    
+    from_start_list = list(from_start)
+    
+    #jsonify
+    
+    return jsonify(from_start_list)
+
+
+@app.route("/api/v1.0/<start>/<end>")
+def start_end(start=None, end=None):
+    
+    # Create our session (link) from Python to the DB
+    
+    session = Session(engine)
+    
+    #query start date to end date tmin, tavg, and tmax
+    
+    between_dates = session.query(measurement.date, func.min(measurement.tobs),\
+        func.avg(measurement.tobs),\
+            func.max(measurement.tobs)).\
+                filter(measurement.date >= start).\
+                    filter(measurement.date <= end).\
+                        group_by(measurement.date).all()
+    
+    #convert to a list
+    
+    between_dates_list = list(between_dates)
+    
+    #jsonify
+    
+    return jsonify(between_dates_list)
+
+#run app
 
 if __name__ == '__main__':
     app.run(debug=True)
