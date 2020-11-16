@@ -41,8 +41,8 @@ def welcome():
         f"/api/v1.0/precipitation<br/>"
         f"/api/v1.0/stations<br/>"
         f"/api/v1.0/tobs<br/>"
-        f"/api/v1.0/<start_date>/ add start date in YYYY-MM-DD format to replace <start_date>"
-        f"/api/v1.0/<start>/<end>"
+        f"/api/v1.0/<start>/ add start date in YYYY-MM-DD format<br/>"
+        f"/api/v1.0/<start>/<end> add start date and end date in YYYY-MM-DD format"
     )
 
 
@@ -100,6 +100,11 @@ def tobs():
         filter(measurement.date >= last_year).\
         filter(measurement.station == 'USC00519281').all()
 
+    
+    #close session
+    
+    session.close()
+    
     #convert to dictionary
     all_temps = []
     for date, tobs in results:
@@ -114,30 +119,46 @@ def tobs():
 
 
 @app.route("/api/v1.0/<start>")
-def start(start=None):
+def start(start):
     
     # Create our session (link) from Python to the DB
     
     session = Session(engine)
-    
+
     #query start to current tmin, tavg, and tmax
     
-    from_start = session.query(measurement.date, func.min(measurement.tobs),\
-        func.avg(measurement.tobs),func.max(measurement.tobs)).\
-            filter(measurement.date >= start).\
-                group_by(measurement.date).all()
+    results = session.query(measurement.date,\
+        func.min(measurement.tobs),\
+        func.avg(measurement.tobs),\
+        func.max(measurement.tobs)).\
+        filter(measurement.date >= start).\
+        group_by(measurement.date).all()
+
+    #close session
+
+    session.close()
     
-    #convert to a list
+    #convert to a dictionary
     
-    from_start_list = list(from_start)
+    start_temps = []
+    
+    for date, t_min, t_avg, t_max in results:
+        start_temps_dict = {}
+        start_temps_dict["date"] = date
+        start_temps_dict["min"] = t_min
+        start_temps_dict["avg"] = t_avg
+        start_temps_dict["max"] = t_max
+        start_temps.append(start_temps_dict)
+    
+    return jsonify(start_temps) 
     
     #jsonify
     
-    return jsonify(from_start_list)
+    return jsonify(start_temps)
 
 
 @app.route("/api/v1.0/<start>/<end>")
-def start_end(start=None, end=None):
+def start_end(start, end):
     
     # Create our session (link) from Python to the DB
     
@@ -145,20 +166,33 @@ def start_end(start=None, end=None):
     
     #query start date to end date tmin, tavg, and tmax
     
-    between_dates = session.query(measurement.date, func.min(measurement.tobs),\
+    results = session.query(measurement.date,\
+        func.min(measurement.tobs),\
         func.avg(measurement.tobs),\
-            func.max(measurement.tobs)).\
-                filter(measurement.date >= start).\
-                    filter(measurement.date <= end).\
-                        group_by(measurement.date).all()
+        func.max(measurement.tobs)).\
+        filter(measurement.date >= start).\
+        filter(measurement.date <= end).\
+        group_by(measurement.date).all()
+
+    #close session
+
+    session.close()
     
-    #convert to a list
+    #convert to a dictionary
     
-    between_dates_list = list(between_dates)
+    start_end_temps = []
+    
+    for date, t_min, t_avg, t_max in results:
+        start_end_temps_dict = {}
+        start_end_temps_dict["date"] = date
+        start_end_temps_dict["min"] = t_min
+        start_end_temps_dict["avg"] = t_avg
+        start_end_temps_dict["max"] = t_max
+        start_end_temps.append(start_end_temps_dict)
     
     #jsonify
     
-    return jsonify(between_dates_list)
+    return jsonify(start_end_temps)
 
 #run app
 
