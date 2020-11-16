@@ -55,7 +55,7 @@ def precipitation():
     session.close()
 
     # Convert to Dictionary
-     precip = []
+    precip = []
     for date, prcp in results:
         prcp_dict = {}
         prcp_dict["date"] = date
@@ -72,7 +72,7 @@ def stations():
 
     """Return a list of passenger data including the name, age, and sex of each passenger"""
     # Query all stations
-    results = session.query(station.station).unique()
+    results = session.query(station.name).all()
 
     session.close()
 
